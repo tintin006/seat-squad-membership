@@ -1,7 +1,7 @@
 # SEAT Squad Membership — Current Handoff
 
-Last updated: 2026-04-23 11:45 PM EDT
-Status: Phase 1 complete. Auth, onboarding, app shell, dashboard LIVE and tested end-to-end.
+Last updated: 2026-04-24 12:30 AM EDT
+Status: Phases 1, 2, and 3 COMPLETE. Auth, onboarding, app shell, dashboard, community feed, and admin dashboard all built, deployed, and tested end-to-end.
 
 ---
 
@@ -16,60 +16,50 @@ Status: Phase 1 complete. Auth, onboarding, app shell, dashboard LIVE and tested
 
 ## What We Did Today (Apr 23, 2026)
 
-### 1. Supabase Integration
-- Installed `@supabase/ssr` and `@supabase/supabase-js`
-- Created `src/lib/supabase/server.ts` — server-side client with cookie jar
-- Created `src/lib/supabase/client.ts` — browser client
-- Created `src/lib/supabase/middleware.ts` — session refresh in Next.js middleware
-- Created `src/middleware.ts` — applies session refresh to all routes
-- Connected to existing Remix Academics Supabase project (`wdfqtkqdfkdhwswnavzm`)
-- Vercel env vars set: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+### Phase 1 — Auth, Onboarding, App Shell, Dashboard
+- Supabase SSR integration (`@supabase/ssr`, server/client/middleware clients)
+- Auth pages: `/login`, `/signup`, `/auth/callback`
+- Three-step onboarding (`/onboarding`) with role selection, learning context, intent + display name
+- App shell with responsive left nav (desktop) / hamburger drawer (mobile)
+- Dashboard home with welcome, stats cards, announcements, membership badges
+- Settings page (`/settings`) for profile editing
+- **Critical fixes:**
+  - RLS infinite recursion resolved via `is_seat_admin()` SECURITY DEFINER function
+  - Supabase anon key fixed (was truncated)
+  - `get_or_create_seat_profile` moved to migration 002 to resolve compile-time dependency
+  - Onboarding role cards: thick orange border + checkmark + deeper background
 
-### 2. Auth Pages
-- `/login` — password sign-in, magic link (OTP), Google OAuth
-- `/signup` — email/password with confirmation email flow
-- `/auth/callback` — OAuth redirect handler, exchanges code for session
-- All auth flows redirect authenticated users to `/`
+### Phase 2 — Community Feed
+- Migration `003_seat_community_feed.sql` applied:
+  - `seat_channels` — 5 default channels seeded (General, Homeschool Tips, Educator Lounge, Events & Meetups, The Crate Showcase)
+  - `seat_posts` — with RLS, pinned/announcement flags, view count
+  - `seat_comments` — 2-level nesting enforced by `check_comment_depth()` trigger
+  - `seat_post_reactions` — emoji reactions with toggle support
+  - `seat_bookmarks` — per-user bookmarks
+  - `seat_post_reports` — moderation queue
+- Feed UI components:
+  - `ChannelSidebar` — left rail channel filter with post counts
+  - `PostComposer` — create posts with channel/type selector
+  - `PostCard` — author info, content, bookmark, report, pinned/announcement badges
+  - `ReactionBar` — quick emoji picker + toggle reactions
+  - `CommentThread` — 2-level comments with reply input
+  - `RightRail` — channel info, member count, upcoming events placeholder
+- Dashboard (`/`) now renders full community feed instead of static placeholder
 
-### 3. Onboarding Flow (`/onboarding`)
-- Three-screen flow:
-  - Step 1: Role (Family / Educator / Both) — high-contrast selected state with thick orange border + checkmark
-  - Step 2: Learning context (methodology tags, grade levels, subject tags)
-  - Step 3: Intent tags + display name
-- Protected by layout: redirects unauthenticated to `/login`, redirects already-onboarded to `/`
-- On completion: upserts `seat_profiles` row with `onboarding_complete = true`
-- **FIXED**: RLS infinite recursion resolved via `is_seat_admin()` SECURITY DEFINER function
+### Phase 3 — Admin Foundation
+- `/admin` route protected by `isAdmin` server-side check
+- `AppShell` conditionally shows Admin nav item for admin users
+- Admin dashboard components:
+  - `MembersTable` — search, role filter, role changer dropdown, suspend/unsuspend
+  - `ReportsQueue` — pending reports with resolve/dismiss actions
+- Stats cards: Total Members, Admins, Suspended, Pending Reports
 
-### 4. App Shell + Dashboard
-- Created `(app)` route group with auth-protected layout
-- `AppShell` component:
-  - Desktop: persistent left sidebar with nav (Home, Classroom, The Crate, Events, Members, Tutors)
-  - Mobile: header with hamburger menu, collapsible nav drawer
-  - Sign out button
-- Dashboard home (`/`):
-  - Welcome message with display name
-  - Stats cards (Community, Events, The Crate — all at 0 until data exists)
-  - Announcements section
-  - Membership tier/role badges
-- Settings page (`/settings`):
-  - Edit display name, bio, location, profile visibility
-  - Save to `seat_profiles`
+### Database Migrations (ALL APPLIED)
+1. `001_seat_enums_and_helpers.sql` — enums, `update_updated_at_column()`
+2. `002_seat_profiles_and_subscriptions.sql` — `seat_profiles`, `seat_subscriptions`, `is_seat_admin()`, `get_or_create_seat_profile()`
+3. `003_seat_community_feed.sql` — channels, posts, comments, reactions, bookmarks, reports + 5 seeded channels
 
-### 5. Database Migrations (APPLIED)
-- `supabase/migrations/001_seat_enums_and_helpers.sql`
-  - `seat_role` enum: family, educator, both, admin
-  - `seat_tier` enum: free, member, pro
-  - `seat_event_type` enum
-  - `seat_post_type` enum
-  - `update_updated_at_column()` trigger function
-- `supabase/migrations/002_seat_profiles_and_subscriptions.sql`
-  - `public.seat_profiles` table with full RLS
-  - `public.seat_subscriptions` table with full RLS
-  - `is_seat_admin(uuid)` helper function (SECURITY DEFINER to prevent RLS recursion)
-  - `get_or_create_seat_profile()` helper function
-  - Indexes on tier, role, user_id, stripe_customer_id
-
-### 6. Design System
+### Design System
 - Warm editorial tokens active throughout
 - Princeton Orange `#fb8b24` primary
 - Cream background `#E8D0B4`
@@ -79,42 +69,12 @@ Status: Phase 1 complete. Auth, onboarding, app shell, dashboard LIVE and tested
 
 ---
 
-## Critical Blockers — RESOLVED
-
-- ~~Migrations not applied~~ — Applied via SQL Editor
-- ~~RLS infinite recursion in admin policies~~ — Fixed with `is_seat_admin()` SECURITY DEFINER function
-- ~~Supabase anon key truncated in Vercel~~ — Fixed with full key
-- ~~Email confirmation blocking testing~~ — Temporarily disabled for testing
-
----
-
 ## Git Status
 
 - Remote: `https://github.com/tintin006/seat-squad-membership`
-- Latest commit: `d8a532d` — fix: RLS infinite recursion + onboarding contrast
+- Latest commit: `70c9e23` — feat: Phase 2 community feed + Phase 3 admin dashboard
 - Auto-deploy: Connected to Vercel
-
----
-
-## Next Recommended Steps
-
-### Phase 2 — Community Feed MVP
-- `seat_channels` migration + seed data
-- `seat_posts` migration
-- `seat_comments` migration (max 2 levels)
-- `seat_post_reactions` migration
-- `seat_bookmarks` migration
-- Feed page with channel filtering
-- Post composer with plain text (Tiptap later)
-- Reaction buttons (emoji picker)
-- Comment threads
-- Right rail: channel info, member count, upcoming events
-
-### Phase 3 — Admin Foundation
-- `/admin` route protected by `seat_role = admin`
-- Members table with search/filter
-- Suspend/unsuspend
-- Content moderation queue from `seat_post_reports`
+- Build status: Clean
 
 ---
 
@@ -125,7 +85,10 @@ src/
   app/
     (app)/
       layout.tsx          # Auth guard, fetches seat_profile, renders AppShell
-      page.tsx            # Dashboard home
+      page.tsx            # Dashboard home — fetches feed data, renders FeedPage
+      feed-page.tsx       # Client component: channel filter, composer, post list, right rail
+      admin/
+        page.tsx          # Server component: admin guard, fetches members + reports
       settings/
         page.tsx          # Profile settings
     (auth)/
@@ -142,17 +105,30 @@ src/
     layout.tsx            # Root layout with Inter font, metadata
     globals.css           # Warm editorial theme tokens
   components/
-    app-shell.tsx         # Left nav, mobile menu, sign out
+    app-shell.tsx         # Left nav, mobile menu, sign out, conditional Admin link
+    feed/
+      channel-sidebar.tsx # Channel filter with post counts
+      post-composer.tsx   # Create posts with channel/type selector
+      post-card.tsx       # Post display with bookmark, report, reactions, comments
+      reaction-bar.tsx    # Emoji picker + toggle reactions
+      comment-thread.tsx  # 2-level comment threads with reply
+      right-rail.tsx      # Channel info, member count, upcoming events
+    admin/
+      members-table.tsx   # Searchable/filterable members table with suspend/role
+      reports-queue.tsx   # Pending reports with resolve/dismiss
   lib/
     supabase/
       server.ts           # createServerClient for SSR
       client.ts           # createBrowserClient for client
       middleware.ts       # updateSession for middleware
   middleware.ts           # Applies session refresh globally
+  types/
+    database.ts           # TypeScript types for all SEAT tables
   supabase/
     migrations/
       001_seat_enums_and_helpers.sql
       002_seat_profiles_and_subscriptions.sql
+      003_seat_community_feed.sql
 ```
 
 ---
@@ -185,3 +161,19 @@ npm run dev            # Local dev server
 - [ ] Set up Stripe integration for subscriptions
 - [ ] Add rate limiting to auth endpoints
 - [ ] Run full security audit (RLS, admin policies, input validation)
+- [ ] Add real-time updates for feed (Supabase realtime or polling)
+- [ ] Add image upload support for posts
+- [ ] Add rich text editor (Tiptap) for post composer
+
+---
+
+## Next Recommended Steps (Phase 4+)
+
+1. **Real-time feed updates** — Supabase Realtime for instant post/reaction/comment updates
+2. **Image uploads** — Supabase Storage for post images
+3. **Rich text editor** — Tiptap for formatted posts
+4. **Event system** — `seat_events` table + calendar view + RSVP
+5. **DMs / private messaging** — `seat_conversations` + `seat_messages`
+6. **Notifications** — in-app notification bell + push notifications
+7. **Mobile PWA** — service worker, manifest, offline support
+8. **Stripe billing** — subscription tiers, checkout, webhooks
