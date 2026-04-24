@@ -140,18 +140,24 @@ export default function OnboardingPage() {
             <div className="grid gap-3">
               {roles.map((r) => {
                 const Icon = r.icon;
+                const isSelected = role === r.value;
                 return (
                   <button
                     key={r.value}
                     onClick={() => setRole(r.value)}
-                    className={`flex items-start gap-4 rounded-xl border p-5 text-left transition ${
-                      role === r.value
-                        ? "border-primary bg-primary/10"
-                        : "border-border bg-card hover:border-primary/60"
+                    className={`group relative flex items-start gap-4 rounded-xl border p-5 text-left transition ${
+                      isSelected
+                        ? "border-2 border-primary bg-primary/20 shadow-md"
+                        : "border border-border bg-card hover:border-primary/60"
                     }`}
                   >
-                    <span className="rounded-lg bg-surface-high p-2">
-                      <Icon size={22} className={role === r.value ? "text-primary" : "text-foreground/60"} />
+                    {isSelected && (
+                      <span className="absolute right-3 top-3">
+                        <CheckCircle2 size={20} className="text-primary" />
+                      </span>
+                    )}
+                    <span className={`rounded-lg p-2 ${isSelected ? "bg-primary/30" : "bg-surface-high"}`}>
+                      <Icon size={22} className={isSelected ? "text-primary" : "text-foreground/60"} />
                     </span>
                     <div>
                       <p className="font-display text-lg font-black">{r.label}</p>

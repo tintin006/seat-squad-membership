@@ -59,23 +59,27 @@ CREATE POLICY "Members can view visible profiles"
   TO authenticated
   USING (profile_visibility = 'members' OR profile_visibility = 'public');
 
+-- Helper: check if user is a seat admin (SECURITY DEFINER to avoid RLS recursion)
+CREATE OR REPLACE FUNCTION public.is_seat_admin(user_uuid uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = ''
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.seat_profiles sp
+    WHERE sp.id = user_uuid AND sp.role = 'admin'
+  );
+$$;
+
 -- RLS: Admins can do everything
 CREATE POLICY "Admins can manage all seat profiles"
   ON public.seat_profiles
   FOR ALL
   TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.seat_profiles sp
-      WHERE sp.id = auth.uid() AND sp.role = 'admin'
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.seat_profiles sp
-      WHERE sp.id = auth.uid() AND sp.role = 'admin'
-    )
-  );
+  USING (public.is_seat_admin(auth.uid()))
+  WITH CHECK (public.is_seat_admin(auth.uid()));
 
 -- Seat subscriptions: Stripe subscription state
 CREATE TABLE IF NOT EXISTS public.seat_subscriptions (
@@ -113,18 +117,8 @@ CREATE POLICY "Admins can manage all subscriptions"
   ON public.seat_subscriptions
   FOR ALL
   TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.seat_profiles sp
-      WHERE sp.id = auth.uid() AND sp.role = 'admin'
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.seat_profiles sp
-      WHERE sp.id = auth.uid() AND sp.role = 'admin'
-    )
-  );
+  USING (public.is_seat_admin(auth.uid()))
+  WITH CHECK (public.is_seat_admin(auth.uid()));
 
 -- Index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_seat_profiles_tier ON public.seat_profiles(tier);
