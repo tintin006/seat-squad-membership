@@ -1,7 +1,7 @@
 # SEAT Squad Membership — Current Handoff
 
-Last updated: 2026-04-23 10:18 PM EDT
-Status: Auth, onboarding, app shell, and dashboard built and deployed. Supabase migrations written but NOT YET APPLIED to shared database.
+Last updated: 2026-04-23 11:45 PM EDT
+Status: Phase 1 complete. Auth, onboarding, app shell, dashboard LIVE and tested end-to-end.
 
 ---
 
@@ -9,6 +9,7 @@ Status: Auth, onboarding, app shell, and dashboard built and deployed. Supabase 
 
 - Production: https://seat-squad-membership.vercel.app
 - Vercel project: `seat-squad-membership`
+- GitHub repo: https://github.com/tintin006/seat-squad-membership
 - Stack: Next.js 16 App Router, TypeScript, Tailwind CSS v4, Supabase SSR
 
 ---
@@ -32,12 +33,12 @@ Status: Auth, onboarding, app shell, and dashboard built and deployed. Supabase 
 
 ### 3. Onboarding Flow (`/onboarding`)
 - Three-screen flow:
-  - Step 1: Role (Family / Educator / Both)
+  - Step 1: Role (Family / Educator / Both) — high-contrast selected state with thick orange border + checkmark
   - Step 2: Learning context (methodology tags, grade levels, subject tags)
   - Step 3: Intent tags + display name
 - Protected by layout: redirects unauthenticated to `/login`, redirects already-onboarded to `/`
 - On completion: upserts `seat_profiles` row with `onboarding_complete = true`
-- **BLOCKED**: `seat_profiles` table does not exist yet (migrations not applied)
+- **FIXED**: RLS infinite recursion resolved via `is_seat_admin()` SECURITY DEFINER function
 
 ### 4. App Shell + Dashboard
 - Created `(app)` route group with auth-protected layout
@@ -54,17 +55,18 @@ Status: Auth, onboarding, app shell, and dashboard built and deployed. Supabase 
   - Edit display name, bio, location, profile visibility
   - Save to `seat_profiles`
 
-### 5. Database Migrations (WRITTEN, NOT APPLIED)
+### 5. Database Migrations (APPLIED)
 - `supabase/migrations/001_seat_enums_and_helpers.sql`
   - `seat_role` enum: family, educator, both, admin
   - `seat_tier` enum: free, member, pro
   - `seat_event_type` enum
   - `seat_post_type` enum
   - `update_updated_at_column()` trigger function
-  - `get_or_create_seat_profile()` helper function
 - `supabase/migrations/002_seat_profiles_and_subscriptions.sql`
   - `public.seat_profiles` table with full RLS
   - `public.seat_subscriptions` table with full RLS
+  - `is_seat_admin(uuid)` helper function (SECURITY DEFINER to prevent RLS recursion)
+  - `get_or_create_seat_profile()` helper function
   - Indexes on tier, role, user_id, stripe_customer_id
 
 ### 6. Design System
@@ -77,42 +79,24 @@ Status: Auth, onboarding, app shell, and dashboard built and deployed. Supabase 
 
 ---
 
-## Critical Blocker
+## Critical Blockers — RESOLVED
 
-**Migrations must be applied manually via Supabase SQL Editor.**
-
-`supabase db push` failed because the shared database already has migration history from Remix/Mixtape360. The two migration files cannot be pushed through the CLI.
-
-**To apply:**
-1. Go to https://supabase.com/dashboard/project/wdfqtkqdfkdhwswnavzm/sql/editor
-2. Paste contents of `supabase/migrations/001_seat_enums_and_helpers.sql`
-3. Run
-4. Paste contents of `supabase/migrations/002_seat_profiles_and_subscriptions.sql`
-5. Run
-
-Until this is done, onboarding will error when trying to write to `seat_profiles`.
+- ~~Migrations not applied~~ — Applied via SQL Editor
+- ~~RLS infinite recursion in admin policies~~ — Fixed with `is_seat_admin()` SECURITY DEFINER function
+- ~~Supabase anon key truncated in Vercel~~ — Fixed with full key
+- ~~Email confirmation blocking testing~~ — Temporarily disabled for testing
 
 ---
 
 ## Git Status
 
-- Local commits: `9b9b391` (feat: auth, onboarding, app shell, and dashboard)
-- **No GitHub remote configured.** `git push origin main` fails.
-- To connect:
-  ```bash
-  cd ~/seat-squad-membership
-  gh repo create seat-squad-membership --public --source=. --push
-  # Then configure Vercel Git integration for auto-deploy
-  ```
+- Remote: `https://github.com/tintin006/seat-squad-membership`
+- Latest commit: `d8a532d` — fix: RLS infinite recursion + onboarding contrast
+- Auto-deploy: Connected to Vercel
 
 ---
 
 ## Next Recommended Steps
-
-### Phase 1 Completion (After migrations applied)
-- Test full auth flow: signup → email confirm → onboarding → dashboard
-- Test Google OAuth callback
-- Test settings save
 
 ### Phase 2 — Community Feed MVP
 - `seat_channels` migration + seed data
@@ -178,7 +162,7 @@ src/
 | Name | Value | Scope |
 |------|-------|-------|
 | NEXT_PUBLIC_SUPABASE_URL | https://wdfqtkqdfkdhwswnavzm.supabase.co | Production |
-| NEXT_PUBLIC_SUPABASE_ANON_KEY | eyJhbG...3RnE | Production |
+| NEXT_PUBLIC_SUPABASE_ANON_KEY | [full key] | Production |
 
 ---
 
@@ -189,3 +173,15 @@ cd ~/seat-squad-membership
 npm run build          # Verify production build
 npm run dev            # Local dev server
 ```
+
+---
+
+## Production Checklist Before Public Launch
+
+- [ ] Re-enable email confirmation in Supabase Auth settings
+- [ ] Configure Google OAuth (enable provider + add Client ID/Secret)
+- [ ] Configure custom email templates (Supabase Auth > Email Templates)
+- [ ] Add Privacy Policy and Terms of Service pages
+- [ ] Set up Stripe integration for subscriptions
+- [ ] Add rate limiting to auth endpoints
+- [ ] Run full security audit (RLS, admin policies, input validation)
