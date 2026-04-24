@@ -14,10 +14,11 @@ import {
   LogOut,
   Menu,
   X,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 
-const navItems = [
+const baseNavItems = [
   { icon: Home, label: "Home", href: "/" },
   { icon: BookOpen, label: "Classroom", href: "/classroom" },
   { icon: Package, label: "The Crate", href: "/crate" },
@@ -38,6 +39,11 @@ export function AppShell({
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const supabase = createClient();
+
+  const isAdmin = profile?.role === "admin";
+  const navItems = isAdmin
+    ? [...baseNavItems, { icon: Shield, label: "Admin", href: "/admin" }]
+    : baseNavItems;
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
