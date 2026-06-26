@@ -3,18 +3,25 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, CheckCircle2 } from "lucide-react";
+import type { SeatProfile } from "@/types/database";
+import { BillingPanel } from "@/components/billing/billing-panel";
+import type { SeatTier } from "@/lib/tiers";
 
 export default function SettingsPage() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const [, setProfile] = useState<SeatProfile | null>(null);
 
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
   const [profileVisibility, setProfileVisibility] = useState("members");
+  const [tier, setTier] = useState<SeatTier>("free");
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
+  const [hasBillingCustomer, setHasBillingCustomer] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -31,7 +38,20 @@ export default function SettingsPage() {
         setBio(data.bio || "");
         setLocation(data.location || "");
         setProfileVisibility(data.profile_visibility || "members");
+        setTier(data.tier || "free");
       }
+
+      const { data: subscription } = await supabase
+        .from("seat_subscriptions")
+        .select("stripe_customer_id, status, current_period_end")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setHasBillingCustomer(Boolean(subscription?.stripe_customer_id));
+      setSubscriptionStatus(subscription?.status || null);
+      setCurrentPeriodEnd(subscription?.current_period_end || null);
       setLoading(false);
     }
     loadProfile();
@@ -76,6 +96,13 @@ export default function SettingsPage() {
         <p className="mt-2 text-muted-foreground">Manage your SEAT Squad profile.</p>
 
         <div className="mt-8 space-y-6">
+          <BillingPanel
+            currentTier={tier}
+            subscriptionStatus={subscriptionStatus}
+            currentPeriodEnd={currentPeriodEnd}
+            hasBillingCustomer={hasBillingCustomer}
+          />
+
           <div>
             <label className="mb-1.5 block text-sm font-bold">Display Name</label>
             <input

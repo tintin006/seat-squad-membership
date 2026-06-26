@@ -18,11 +18,11 @@ export function ChannelSidebar({ channels, activeChannel, onSelectChannel, postC
         className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-bold transition ${
           activeChannel === null
             ? "bg-primary text-primary-foreground"
-            : "text-foreground/80 hover:bg-surface-high"
+            : "text-foreground hover:bg-surface-high"
         }`}
       >
         <Hash size={16} />
-        All Channels
+        All Threads
       </button>
       {channels.map((ch) => (
         <button
@@ -31,7 +31,7 @@ export function ChannelSidebar({ channels, activeChannel, onSelectChannel, postC
           className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-bold transition ${
             activeChannel === ch.slug
               ? "bg-primary text-primary-foreground"
-              : "text-foreground/80 hover:bg-surface-high"
+              : "text-foreground hover:bg-surface-high"
           }`}
         >
           <span
@@ -40,7 +40,11 @@ export function ChannelSidebar({ channels, activeChannel, onSelectChannel, postC
           />
           <span className="flex-1 text-left">{ch.name}</span>
           {postCounts[ch.slug] > 0 && (
-            <span className="rounded-full bg-surface-high px-1.5 py-0.5 text-[10px] font-black text-muted-foreground">
+            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+              activeChannel === ch.slug
+                ? "bg-white/18 text-primary-foreground"
+                : "bg-surface-high text-muted-foreground"
+            }`}>
               {postCounts[ch.slug]}
             </span>
           )}

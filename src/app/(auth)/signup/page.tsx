@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
 
@@ -62,22 +63,24 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md">
+    <div className="grid min-h-screen bg-background lg:grid-cols-[0.95fr_1.05fr]">
+      <div className="flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-warm sm:p-8">
         <div className="mb-8 text-center">
+          <Image src="/brand/asterisk.png" alt="" width={32} height={32} className="mx-auto mb-4 h-8 w-8" />
           <h1 className="font-display text-3xl font-black tracking-[-0.04em]">
             Join the SEAT Squad
           </h1>
-          <p className="mt-2 text-muted-foreground">
+          <p className="mt-2 font-semibold text-muted-foreground">
             Create your free membership account.
           </p>
         </div>
 
         {success ? (
-          <div className="rounded-xl border border-border bg-card p-6 text-center">
+          <div className="rounded-xl border border-border bg-surface p-6 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-primary" />
             <h2 className="mt-4 font-display text-xl font-black">Check your email</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm font-semibold text-muted-foreground">
               We sent a confirmation link to {email}. Click it to activate your account.
             </p>
             <Link
@@ -102,7 +105,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-md border border-border bg-surface-high px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 placeholder="you@example.com"
               />
             </div>
@@ -114,7 +117,7 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-md border border-border bg-surface-high px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 placeholder="••••••••"
               />
               <p className="mt-1 text-xs text-muted-foreground">At least 8 characters</p>
@@ -127,7 +130,7 @@ export default function SignupPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-md border border-border bg-surface-high px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 placeholder="••••••••"
               />
             </div>
@@ -145,7 +148,7 @@ export default function SignupPage() {
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground font-bold">or</span>
+                <span className="bg-card px-2 text-muted-foreground font-bold">or</span>
               </div>
             </div>
 
@@ -153,7 +156,7 @@ export default function SignupPage() {
               type="button"
               onClick={handleGoogle}
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-3 text-sm font-bold transition hover:border-primary/60"
+              className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-surface-high px-4 py-3 text-sm font-bold transition hover:border-primary/60"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path
@@ -176,7 +179,7 @@ export default function SignupPage() {
               Continue with Google
             </button>
 
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-sm font-semibold text-muted-foreground">
               Already have an account?{" "}
               <Link href="/login" className="font-bold text-primary hover:underline">
                 Sign in
@@ -185,6 +188,31 @@ export default function SignupPage() {
           </form>
         )}
       </div>
+      </div>
+
+      <section className="hidden min-h-screen bg-secondary text-secondary-foreground lg:block">
+        <div className="seat-image h-full">
+          <Image
+            src="/images/seat-squad-support-diverse.png"
+            alt=""
+            fill
+            priority
+            sizes="50vw"
+            className="object-cover"
+          />
+          <div className="absolute inset-x-0 bottom-0 z-10 p-10">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">
+              Beyond the feed
+            </p>
+            <h2 className="mt-3 max-w-xl font-display text-5xl font-black leading-none tracking-[-0.04em] text-white">
+              Community that can move from post to practice.
+            </h2>
+            <p className="mt-4 max-w-lg text-base font-semibold leading-7 text-white/82">
+              SEAT Squad can become a place for shared tools, live listening, local context, and member-shaped resources.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

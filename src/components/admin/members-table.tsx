@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Shield, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Search, ShieldAlert, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface Member {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Mail, ArrowRight } from "lucide-react";
 
@@ -71,22 +72,48 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md">
+    <div className="grid min-h-screen bg-background lg:grid-cols-[1.05fr_0.95fr]">
+      <section className="hidden min-h-screen bg-secondary text-secondary-foreground lg:block">
+        <div className="seat-image h-full">
+          <Image
+            src="/images/seat-squad-community-diverse.png"
+            alt=""
+            fill
+            priority
+            sizes="50vw"
+            className="object-cover"
+          />
+          <div className="absolute inset-x-0 bottom-0 z-10 p-10">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">
+              SEAT Squad
+            </p>
+            <h2 className="mt-3 max-w-xl font-display text-5xl font-black leading-none tracking-[-0.04em] text-white">
+              A member space for the learning life behind the profile.
+            </h2>
+            <p className="mt-4 max-w-lg text-base font-semibold leading-7 text-white/82">
+              Built for context-rich support: identity, family logistics, community care, and practical next steps in one place.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div className="flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-warm sm:p-8">
         <div className="mb-8 text-center">
+          <Image src="/brand/asterisk.png" alt="" width={32} height={32} className="mx-auto mb-4 h-8 w-8" />
           <h1 className="font-display text-3xl font-black tracking-[-0.04em]">
             Welcome back to SEAT Squad
           </h1>
-          <p className="mt-2 text-muted-foreground">
+          <p className="mt-2 font-semibold text-muted-foreground">
             Sign in to your membership community.
           </p>
         </div>
 
         {magicLinkSent ? (
-          <div className="rounded-xl border border-border bg-card p-6 text-center">
+          <div className="rounded-xl border border-border bg-surface p-6 text-center">
             <Mail className="mx-auto h-10 w-10 text-primary" />
             <h2 className="mt-4 font-display text-xl font-black">Check your email</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm font-semibold text-muted-foreground">
               We sent a magic link to {email}. Click it to sign in.
             </p>
             <button
@@ -111,7 +138,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-md border border-border bg-surface-high px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 placeholder="you@example.com"
               />
             </div>
@@ -123,7 +150,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-md border border-border bg-surface-high px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 placeholder="••••••••"
               />
             </div>
@@ -141,7 +168,7 @@ export default function LoginPage() {
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground font-bold">or</span>
+                <span className="bg-card px-2 text-muted-foreground font-bold">or</span>
               </div>
             </div>
 
@@ -149,7 +176,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleMagicLink}
               disabled={loading}
-              className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm font-bold transition hover:border-primary/60"
+              className="w-full rounded-md border border-border bg-surface-high px-4 py-3 text-sm font-bold transition hover:border-primary/60"
             >
               Send Magic Link
             </button>
@@ -158,7 +185,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleGoogle}
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-3 text-sm font-bold transition hover:border-primary/60"
+              className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-surface-high px-4 py-3 text-sm font-bold transition hover:border-primary/60"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path
@@ -181,7 +208,7 @@ export default function LoginPage() {
               Continue with Google
             </button>
 
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-sm font-semibold text-muted-foreground">
               Don&apos;t have an account?{" "}
               <Link href="/signup" className="font-bold text-primary hover:underline">
                 Sign up
@@ -189,6 +216,7 @@ export default function LoginPage() {
             </p>
           </form>
         )}
+      </div>
       </div>
     </div>
   );

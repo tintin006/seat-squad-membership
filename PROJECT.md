@@ -1,0 +1,1 @@
+/Users/remixa/_BANK/memory/projects/seat-squad/PROJECT.md

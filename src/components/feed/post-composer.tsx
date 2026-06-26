@@ -13,6 +13,7 @@ interface PostComposerProps {
 
 export function PostComposer({ channels, defaultChannelId, onPostCreated }: PostComposerProps) {
   const supabase = createClient();
+  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [selectedChannel, setSelectedChannel] = useState(defaultChannelId || channels[0]?.id || "");
   const [postType, setPostType] = useState<"text" | "image" | "link" | "poll">("text");
@@ -20,7 +21,7 @@ export function PostComposer({ channels, defaultChannelId, onPostCreated }: Post
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !selectedChannel) return;
+    if (!title.trim() || !content.trim() || !selectedChannel) return;
 
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -33,11 +34,13 @@ export function PostComposer({ channels, defaultChannelId, onPostCreated }: Post
       channel_id: selectedChannel,
       author_id: user.id,
       type: postType,
+      title: title.trim(),
       content: content.trim(),
     });
 
     setLoading(false);
     if (!error) {
+      setTitle("");
       setContent("");
       onPostCreated();
     }
@@ -51,7 +54,7 @@ export function PostComposer({ channels, defaultChannelId, onPostCreated }: Post
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-4">
+    <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-4 shadow-soft">
       <div className="mb-3 flex items-center gap-2">
         <select
           value={selectedChannel}
@@ -73,7 +76,7 @@ export function PostComposer({ channels, defaultChannelId, onPostCreated }: Post
               className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-bold transition ${
                 postType === type
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-surface-high"
+                  : "text-muted-foreground hover:bg-surface-high hover:text-foreground"
               }`}
             >
               <Icon size={12} />
@@ -82,17 +85,23 @@ export function PostComposer({ channels, defaultChannelId, onPostCreated }: Post
           ))}
         </div>
       </div>
+      <input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Thread title"
+        className="mb-3 w-full rounded-md border border-border bg-surface-high px-3 py-2.5 text-sm font-black text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary"
+      />
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="What's on your mind?"
-        rows={3}
-        className="w-full resize-none rounded-md border border-border bg-surface-high px-3 py-2.5 text-sm font-semibold outline-none placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary"
+        placeholder="Add context, details, links, or the practical question you want members to answer."
+        rows={4}
+        className="w-full resize-none rounded-md border border-border bg-surface-high px-3 py-2.5 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary"
       />
       <div className="mt-3 flex justify-end">
         <button
           type="submit"
-          disabled={loading || !content.trim()}
+          disabled={loading || !title.trim() || !content.trim()}
           className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-black text-primary-foreground transition hover:translate-y-[-1px] disabled:opacity-40"
         >
           {loading ? "Posting..." : <><Send size={14} /> Post</>}

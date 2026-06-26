@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, ArrowRight, CheckCircle2, Users, GraduationCap, Heart } from "lucide-react";
+import { Loader2, ArrowRight, CheckCircle2, Users, GraduationCap, Heart, MapPin } from "lucide-react";
 
 const roles = [
   { value: "family", label: "Family", icon: Heart, desc: "I am a parent or guardian supporting my child's learning." },
@@ -40,13 +40,14 @@ const subjects = [
 ];
 
 const intents = [
-  "Community and support",
-  "Curriculum and resources",
-  "Finding a tutor",
-  "Getting my child on track",
-  "Supporting other families",
-  "Learning about Remix Academics",
-  "Exploring Mixtape360",
+  "Ask a homeschool question",
+  "Download state and ESA guides",
+  "Find a pod or homeschool group",
+  "Submit a Live Q&A question",
+  "Follow The Remix Report",
+  "Find tutor support",
+  "Build a weekly learning rhythm",
+  "Meet other families",
 ];
 
 export default function OnboardingPage() {
@@ -62,6 +63,7 @@ export default function OnboardingPage() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedIntents, setSelectedIntents] = useState<string[]>([]);
   const [displayName, setDisplayName] = useState("");
+  const [location, setLocation] = useState("");
 
   const toggleSelection = (item: string, list: string[], setList: (v: string[]) => void) => {
     if (list.includes(item)) {
@@ -90,6 +92,7 @@ export default function OnboardingPage() {
       grade_levels: selectedGrades,
       subject_tags: selectedSubjects,
       intent_tags: selectedIntents,
+      location: location || null,
       onboarding_complete: true,
       updated_at: new Date().toISOString(),
     });
@@ -104,14 +107,17 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-xl">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+      <div className="w-full max-w-3xl">
         <div className="mb-8 text-center">
-          <h1 className="font-display text-3xl font-black tracking-[-0.04em]">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-soft">
+            <GraduationCap size={24} />
+          </div>
+          <h1 className="font-display text-3xl font-black">
             Welcome to the SEAT Squad
           </h1>
-          <p className="mt-2 text-muted-foreground">
-            A few quick questions so we can tailor your experience.
+          <p className="mx-auto mt-2 max-w-xl text-sm font-semibold text-muted-foreground">
+            A few quick questions will tune your home dashboard toward the resources, people, and discussions that matter first.
           </p>
         </div>
 
@@ -145,7 +151,7 @@ export default function OnboardingPage() {
                   <button
                     key={r.value}
                     onClick={() => setRole(r.value)}
-                    className={`group relative flex items-start gap-4 rounded-xl border p-5 text-left transition ${
+                    className={`group relative flex items-start gap-4 rounded-lg border p-5 text-left transition ${
                       isSelected
                         ? "border-2 border-primary bg-primary/20 shadow-md"
                         : "border border-border bg-card hover:border-primary/60"
@@ -262,35 +268,50 @@ export default function OnboardingPage() {
         {step === 3 && (
           <div className="space-y-6">
             <div>
-              <h2 className="font-display text-xl font-black">What brings you here?</h2>
-              <p className="text-sm text-muted-foreground">Select all that apply.</p>
+              <h2 className="font-display text-xl font-black">What should your dashboard prioritize?</h2>
+              <p className="text-sm text-muted-foreground">Choose the first actions you want SEAT Squad to make easy.</p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               {intents.map((i) => (
                 <button
                   key={i}
                   onClick={() => toggleSelection(i, selectedIntents, setSelectedIntents)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                  className={`flex min-h-12 items-center justify-between rounded-lg border px-3 py-2 text-left text-xs font-bold transition ${
                     selectedIntents.includes(i)
-                      ? "border-primary bg-primary text-primary-foreground"
+                      ? "border-primary bg-primary text-primary-foreground shadow-soft"
                       : "border-border bg-card text-foreground hover:border-primary/60"
                   }`}
                 >
-                  {i}
+                  <span>{i}</span>
+                  {selectedIntents.includes(i) && <CheckCircle2 size={16} />}
                 </button>
               ))}
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-sm font-bold">Display Name</label>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="What should we call you?"
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-              />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-sm font-bold">Display Name</label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="What should we call you?"
+                  className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-sm font-bold">
+                  <MapPin size={15} /> Location
+                </label>
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="City, ST"
+                  className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
             </div>
 
             <div className="flex gap-3">

@@ -1,81 +1,116 @@
+import { MemberDashboardPage, type DashboardBadge, type DashboardPost } from "@/components/dashboard/member-dashboard-page";
 import { createClient } from "@/lib/supabase/server";
-import { FeedPage } from "./feed-page";
+import type { SeatLiveSession, SeatPointTotal, SeatProfile } from "@/types/database";
+
+type QueryPost = Omit<DashboardPost, "author" | "channel"> & {
+  author: DashboardPost["author"] | DashboardPost["author"][];
+  channel: DashboardPost["channel"] | NonNullable<DashboardPost["channel"]>[];
+};
+
+type QueryBadge = {
+  badge: DashboardBadge | DashboardBadge[] | null;
+};
+
+function firstRelation<T>(relation: T | T[] | null): T | null {
+  return Array.isArray(relation) ? relation[0] ?? null : relation;
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
-    .from("seat_profiles")
-    .select("display_name, role, tier")
-    .eq("id", user!.id)
-    .single();
+  if (!user) {
+    throw new Error("Dashboard requires an authenticated user.");
+  }
 
-  const displayName = profile?.display_name || user?.email?.split("@")[0] || "Member";
+  const [
+    profileResult,
+    postsResult,
+    liveSessionResult,
+    pointTotalResult,
+    badgesResult,
+    memberCountResult,
+    groupCountResult,
+  ] = await Promise.all([
+    supabase
+      .from("seat_profiles")
+      .select("display_name, role, tier, intent_tags, methodology_tags, grade_levels, location")
+      .eq("id", user.id)
+      .single(),
+    supabase
+      .from("seat_posts")
+      .select(`
+        id, title, content, created_at,
+        author:seat_profiles!author_id(display_name),
+        channel:seat_channels!channel_id(name, slug, color)
+      `)
+      .order("is_pinned", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(4),
+    supabase
+      .from("seat_live_sessions")
+      .select("title, day_label, time_label, timezone, status, id")
+      .eq("slug", "weekly-live-qa")
+      .maybeSingle(),
+    supabase
+      .from("seat_point_totals")
+      .select("total_points, posts_count, comments_count, reactions_given_count, reactions_received_count, pod_submissions_count")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("seat_member_badges")
+      .select("badge:seat_badges(name, description)")
+      .eq("user_id", user.id),
+    supabase
+      .from("seat_profiles")
+      .select("*", { count: "exact", head: true }),
+    supabase
+      .from("seat_group_submissions")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "approved"),
+  ]);
 
-  // Fetch channels
-  const { data: channels } = await supabase
-    .from("seat_channels")
-    .select("*")
-    .order("is_default", { ascending: false });
+  const rsvpResult = liveSessionResult.data?.id
+    ? await supabase
+        .from("seat_live_session_rsvps")
+        .select("status")
+        .eq("session_id", liveSessionResult.data.id)
+        .eq("user_id", user.id)
+        .maybeSingle()
+    : { data: null };
 
-  // Fetch posts with author and channel
-  const { data: posts } = await supabase
-    .from("seat_posts")
-    .select(`
-      id, channel_id, author_id, type, title, content, is_pinned, is_announcement, created_at,
-      author:seat_profiles!author_id(display_name, avatar_url, role),
-      channel:seat_channels!channel_id(name, slug, color)
-    `)
-    .order("is_pinned", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(50);
+  const normalizedPosts: DashboardPost[] = ((postsResult.data || []) as unknown as QueryPost[]).map((post) => ({
+    ...post,
+    author: firstRelation(post.author),
+    channel: firstRelation(post.channel),
+  }));
 
-  // Fetch reactions
-  const { data: allReactions } = await supabase
-    .from("seat_post_reactions")
-    .select("post_id, emoji, user_id");
+  const badges: DashboardBadge[] = ((badgesResult.data || []) as unknown as QueryBadge[])
+    .map((row) => firstRelation(row.badge))
+    .filter((badge): badge is DashboardBadge => Boolean(badge));
 
-  // Fetch comment counts
-  const { data: allComments } = await supabase
-    .from("seat_comments")
-    .select("post_id, id, content, is_deleted, created_at, parent_id, author:seat_profiles!author_id(display_name, avatar_url)");
-
-  // Fetch bookmarks for current user
-  const { data: userBookmarks } = await supabase
-    .from("seat_bookmarks")
-    .select("post_id")
-    .eq("user_id", user!.id);
-
-  // Fetch total member count
-  const { count: memberCount } = await supabase
-    .from("seat_profiles")
-    .select("*", { count: "exact", head: true });
-
-  // Post counts per channel
-  const { data: postCountsRaw } = await supabase
-    .from("seat_posts")
-    .select("channel_id, seat_channels!inner(slug)");
-
-  const postCounts: Record<string, number> = {};
-  postCountsRaw?.forEach((p: any) => {
-    const slug = p.seat_channels?.slug;
-    if (slug) {
-      postCounts[slug] = (postCounts[slug] || 0) + 1;
-    }
-  });
+  const profile = (profileResult.data || {
+    display_name: user.email?.split("@")[0] || "Member",
+    role: "family",
+    tier: "free",
+    intent_tags: [],
+    methodology_tags: [],
+    grade_levels: [],
+    location: null,
+  }) as Pick<SeatProfile, "display_name" | "role" | "tier" | "intent_tags" | "methodology_tags" | "grade_levels" | "location">;
 
   return (
-    <FeedPage
-      displayName={displayName}
-      channels={channels || []}
-      posts={posts || []}
-      allReactions={allReactions || []}
-      allComments={allComments || []}
-      userBookmarks={userBookmarks || []}
-      memberCount={memberCount || 0}
-      postCounts={postCounts}
-      userId={user!.id}
+    <MemberDashboardPage
+      profile={profile}
+      memberCount={memberCountResult.count || 0}
+      approvedGroupCount={groupCountResult.count || 0}
+      latestPosts={normalizedPosts}
+      liveSession={liveSessionResult.data as SeatLiveSession | null}
+      rsvpStatus={rsvpResult.data?.status || null}
+      pointTotal={pointTotalResult.data as SeatPointTotal | null}
+      badges={badges}
     />
   );
 }

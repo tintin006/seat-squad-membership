@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { MessageSquare, Send } from "lucide-react";
+import { Lock, MessageSquare, Send } from "lucide-react";
 
 interface Comment {
   id: string;
@@ -20,10 +20,11 @@ interface CommentThreadProps {
   postId: string;
   comments: Comment[];
   commentCount: number;
+  isLocked?: boolean;
   onCommentAdded: () => void;
 }
 
-export function CommentThread({ postId, comments, commentCount, onCommentAdded }: CommentThreadProps) {
+export function CommentThread({ postId, comments, commentCount, isLocked = false, onCommentAdded }: CommentThreadProps) {
   const supabase = createClient();
   const [showComments, setShowComments] = useState(false);
   const [replyContent, setReplyContent] = useState("");
@@ -35,7 +36,7 @@ export function CommentThread({ postId, comments, commentCount, onCommentAdded }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyContent.trim()) return;
+    if (isLocked || !replyContent.trim()) return;
 
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -88,7 +89,7 @@ export function CommentThread({ postId, comments, commentCount, onCommentAdded }
               <p className="mt-0.5 text-muted-foreground">
                 {comment.is_deleted ? "[deleted]" : comment.content}
               </p>
-              {!comment.is_deleted && (
+              {!comment.is_deleted && !isLocked && (
                 <button
                   onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
                   className="mt-1 text-[11px] font-bold text-primary/70 hover:text-primary"
@@ -135,21 +136,28 @@ export function CommentThread({ postId, comments, commentCount, onCommentAdded }
             </div>
           ))}
 
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <input
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              placeholder="Add a comment..."
-              className="flex-1 rounded-md border border-border bg-surface-high px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <button
-              type="submit"
-              disabled={loading || !replyContent.trim()}
-              className="rounded-md bg-primary px-3 py-2 text-xs font-black text-primary-foreground disabled:opacity-40"
-            >
-              <Send size={14} />
-            </button>
-          </form>
+          {isLocked ? (
+            <div className="flex items-center gap-2 rounded-md border border-border bg-surface-high px-3 py-2 text-xs font-bold text-muted-foreground">
+              <Lock size={14} />
+              Replies are closed for this thread.
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <input
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder="Add a comment..."
+                className="flex-1 rounded-md border border-border bg-surface-high px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+              <button
+                type="submit"
+                disabled={loading || !replyContent.trim()}
+                className="rounded-md bg-primary px-3 py-2 text-xs font-black text-primary-foreground disabled:opacity-40"
+              >
+                <Send size={14} />
+              </button>
+            </form>
+          )}
         </div>
       )}
     </div>
